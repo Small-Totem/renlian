@@ -1,5 +1,4 @@
 import random
-
 from keras import backend as K
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.layers import Dense, Dropout, Activation, Flatten
@@ -9,8 +8,7 @@ from keras.optimizers import SGD
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
-
-from load_data import load_dataset, resize_image, IMAGE_SIZE
+from load_data import load_dataset, resize_image, IMAGE_SIZE, update_contrast_table
 
 
 class Dataset:
@@ -60,35 +58,36 @@ class Dataset:
             test_images = test_images.reshape(test_images.shape[0], img_rows, img_cols, img_channels)
             self.input_shape = (img_rows, img_cols, img_channels)
 
-            # 输出训练集、验证集、测试集的数量
-            print(train_images.shape[0], 'train samples')
-            print(valid_images.shape[0], 'valid samples')
-            print(test_images.shape[0], 'test samples')
+        # 输出训练集、验证集、测试集的数量
+        # zjh: 源代码这里缩进有问题,已经改了
+        print(train_images.shape[0], 'train samples')
+        print(valid_images.shape[0], 'valid samples')
+        print(test_images.shape[0], 'test samples')
 
-            '''
-            我们的模型使用categorical_crossentropy作为损失函数，因此需要根据类别数量nb_classes将
-            类别标签进行one-hot编码使其向量化，在这里我们的类别只有两种，经过转化后标签数据变为二维
-            '''
-            train_labels = np_utils.to_categorical(train_labels, self.nb_classes)
-            valid_labels = np_utils.to_categorical(valid_labels, self.nb_classes)
-            test_labels = np_utils.to_categorical(test_labels, self.nb_classes)
+        '''
+        我们的模型使用categorical_crossentropy作为损失函数，因此需要根据类别数量nb_classes将
+        类别标签进行one-hot编码使其向量化，在这里我们的类别只有两种，经过转化后标签数据变为二维
+        '''
+        train_labels = np_utils.to_categorical(train_labels, self.nb_classes)
+        valid_labels = np_utils.to_categorical(valid_labels, self.nb_classes)
+        test_labels = np_utils.to_categorical(test_labels, self.nb_classes)
 
-            # 像素数据浮点化以便归一化
-            train_images = train_images.astype('float32')
-            valid_images = valid_images.astype('float32')
-            test_images = test_images.astype('float32')
+        # 像素数据浮点化以便归一化
+        train_images = train_images.astype('float32')
+        valid_images = valid_images.astype('float32')
+        test_images = test_images.astype('float32')
 
-            # 将其归一化,图像的各像素值归一化到0~1区间
-            train_images /= 255
-            valid_images /= 255
-            test_images /= 255
+        # 将其归一化,图像的各像素值归一化到0~1区间
+        train_images /= 255
+        valid_images /= 255
+        test_images /= 255
 
-            self.train_images = train_images
-            self.valid_images = valid_images
-            self.test_images = test_images
-            self.train_labels = train_labels
-            self.valid_labels = valid_labels
-            self.test_labels = test_labels
+        self.train_images = train_images
+        self.valid_images = valid_images
+        self.test_images = test_images
+        self.train_labels = train_labels
+        self.valid_labels = valid_labels
+        self.test_labels = test_labels
 
 
 # CNN网络模型类
@@ -178,9 +177,11 @@ class Model:
     MODEL_PATH = './model/face.model'
 
     def save_model(self, file_path=MODEL_PATH):
+        print('model saved -> ', file_path)
         self.model.save(file_path)
 
     def load_model(self, file_path=MODEL_PATH):
+        print('model loaded <- ', file_path)
         self.model = load_model(file_path)
 
     def evaluate(self, dataset):
@@ -209,10 +210,10 @@ class Model:
         result = self.model.predict_classes(image)
 
         # 返回类别预测结果
-        return max(result_probability[0]),result[0]
+        return max(result_probability[0]), result[0]
 
 
-if __name__ == '__main__':
+def do_train():
     dataset = Dataset('./data/')
     dataset.load()
     model = Model()
@@ -220,3 +221,8 @@ if __name__ == '__main__':
     model.train(dataset)
     model.save_model(file_path='./model/face.model')
     model.evaluate(dataset)
+    update_contrast_table('./data/')
+
+
+if __name__ == '__main__':
+    do_train()
